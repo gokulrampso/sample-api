@@ -1,0 +1,36 @@
+version: 2.1
+
+executors:
+  java-executor:
+    docker:
+      - image: cimg/openjdk:17.0
+    working_directory: ~/repo
+
+jobs:
+  build:
+    executor: java-executor
+    steps:
+      - checkout
+      - run: ./gradlew build
+      - run: ./gradlew test jacocoTestReport
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+            - build/reports/jacoco/test/html
+  docker-build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: docker build -t sample-api .
+
+workflows:
+  version: 2
+  build_and_docker:
+    jobs:
+      - build
+      - docker-build:
+          requires:
+            - build
